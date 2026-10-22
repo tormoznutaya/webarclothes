@@ -22,13 +22,12 @@
     }
     #ar-button:disabled { background: #666; cursor: not-allowed; box-shadow: none; }
 
-    /* Панель управления (появляется только когда манекен поставлен) */
     #ui-container {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
       background: rgba(255, 255, 255, 0.9);
       padding: 15px 30px; border-radius: 15px;
       text-align: center; z-index: 1000;
-      display: none; /* Скрыта по умолчанию */
+      display: none;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
 
@@ -65,7 +64,6 @@
     const info = document.getElementById('info');
     const uiContainer = document.getElementById('ui-container');
 
-    // Проверка поддержки AR
     if (navigator.xr) {
       navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
         if (supported) {
@@ -90,27 +88,23 @@
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
 
-    // Свет
     const ambientLight = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1.5);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(1, 2, 1);
     scene.add(dirLight);
 
-    // Прицел (кольцо на полу)
     const ringGeometry = new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2);
-    const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Зеленый
+    const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const reticle = new THREE.Mesh(ringGeometry, ringMaterial);
     reticle.matrixAutoUpdate = false;
     reticle.visible = false;
     scene.add(reticle);
 
-    // Группа для манекена и одежды
     const loader = new GLTFLoader();
     let mannequinGroup = new THREE.Group();
     let pantsModel = null;
     
-    // ИЗНАЧАЛЬНО СКРЫВАЕМ МАНЕКЕН, ПОКА НЕ ТАПНУТ ПО ЭКРАНУ
     mannequinGroup.visible = false; 
     scene.add(mannequinGroup);
 
@@ -118,14 +112,17 @@
     loader.load('models/mannequin.glb', (gltf) => {
       const model = gltf.scene;
       
-      // Центрируем манекен
-      const box = new THREE.Box3().setFromObject(model);
-      model.position.y -= box.min.y; 
-      model.position.x -= (box.max.x + box.min.x) / 2;
-      model.position.z -= (box.max.z + box.min.z) / 2;
+      // 1. Уменьшаем масштаб
+      const scaleFactor = 0.2;
+      model.scale.set(scaleFactor, scaleFactor, scaleFactor);
       
-      // УМЕНЬШАЕМ МАСШТАБ (если всё равно большой - поставьте 0.1, если маленький - 0.5)
-      model.scale.set(0.2, 0.2, 0.2); 
+      // 2. Центрируем по горизонтали (X и Z)
+      const box = new THREE.Box3().setFromObject(model);
+      model.position.x = -(box.max.x + box.min.x) / 2;
+      model.position.z = -(box.max.z + box.min.z) / 2;
+      
+      // 3. Поднимаем манекен, чтобы его ноги (box.min.y) стояли на полу (Y=0)
+      model.position.y = -box.min.y;
       
       mannequinGroup.add(model);
     }, undefined, (err) => console.error('Ошибка манекена:', err));
@@ -134,17 +131,18 @@
     loader.load('models/pants.glb', (gltf) => {
       pantsModel = gltf.scene;
       
-      // Уменьшаем штаны точно так же, как манекен
-      pantsModel.scale.set(0.2, 0.2, 0.2); 
+      const scaleFactor = 0.2;
+      pantsModel.scale.set(scaleFactor, scaleFactor, scaleFactor); 
       
-      // Подгоняем высоту штанов по ногам
-      pantsModel.position.set(0, 0.11, 0); 
+      // Настройка положения штанов относительно пивота манекена (0,0,0)
+      // Если штаны на голове - делаем Y отрицательным (опускаем вниз).
+      // Если штаны на поясе, но не на ногах - опускаем еще ниже (например, -0.1)
+      pantsModel.position.set(0, -0.15, 0); 
       
       pantsModel.visible = false;
       mannequinGroup.add(pantsModel);
     }, undefined, (err) => console.error('Ошибка штанов:', err));
 
-    // Кнопка переключения штанов
     document.getElementById('btn-pants').addEventListener('click', () => {
       if (pantsModel) {
         pantsModel.visible = !pantsModel.visible;
@@ -173,17 +171,12 @@
       arButton.style.display = 'none';
       info.textContent = 'Тапните по полу, чтобы поставить манекен';
 
-      // Обработка тапа по экрану
       session.addEventListener('select', () => {
         if (reticle.visible) {
-          // Переносим группу с манекеном туда, где прицел
           mannequinGroup.position.setFromMatrixPosition(reticle.matrix);
           mannequinGroup.quaternion.setFromRotationMatrix(reticle.matrix);
-          
-          // Показываем манекен
           mannequinGroup.visible = true; 
           
-          // Показываем панель с кнопкой
           uiContainer.style.display = 'block';
           info.textContent = 'Манекен установлен. Обойдите его вокруг.';
         }
@@ -192,7 +185,7 @@
       session.addEventListener('end', () => {
         arButton.style.display = 'block';
         uiContainer.style.display = 'none';
-        mannequinGroup.visible = false; // Снова прячем при выходе
+        mannequinGroup.visible = false; 
         
         hitTestSource = null;
         referenceSpace = null;
