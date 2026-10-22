@@ -1,1 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAR Каталог Одежды</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Контейнер, куда Three.js будет выводить 3D-графику -->
+    <div id="canvas-container"></div>
 
+    <!-- Интерфейс (кнопки) -->
+    <div id="ui-container">
+        <h1>Виртуальный манекен</h1>
+        <p>Потяните мышкой или пальцем, чтобы вращать</p>
+        
+        <div id="loading" style="color: #ffaa00;">Загрузка 3D-моделей...</div>
+        
+        <div id="controls" style="display: none;">
+            <button id="btn-pants">Надеть штаны</button>
+            <!-- Сюда потом добавим футболки, куртки и т.д. -->
+        </div>
+    </div>
+
+    <!-- Подключаем Three.js и загрузчик GLB-моделей через импорт-карты (современный способ) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    <!-- Подключаем наш основной скрипт -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
