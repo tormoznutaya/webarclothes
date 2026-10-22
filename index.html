@@ -108,29 +108,32 @@
     mannequinGroup.visible = false; 
     scene.add(mannequinGroup);
 
-    // ==========================================
+       // ==========================================
     // НАСТРОЙКИ ДЛЯ ПОДГОНКИ (МЕНЯЙТЕ ЦИФРЫ ЗДЕСЬ)
     // ==========================================
     const mannequinScale = 0.2;       
-    const mannequinOffsetY = 0.8;     // Поднимаем манекен вверх (0 - это центр, если надо выше - ставьте 0.1 или 0.2)
-    const pantsOffsetY = 0.3;        // Опускаем штаны еще ниже относительно манекена
+    const mannequinOffsetY = 0.8;     // Высота манекена
+    const pantsOffsetY = 0.3;         // Высота штанов
+    const pantsScale = 1.2;           // Размер штанов (1.2 = на 20% больше манекена)
     // ==========================================
-
     // Загрузка манекена
-    loader.load('models/mannequin.glb', (gltf) => {
-      const model = gltf.scene;
+        // Загрузка штанов
+    loader.load('models/pants.glb', (gltf) => {
+      pantsModel = gltf.scene;
       
-      model.scale.set(mannequinScale, mannequinScale, mannequinScale);
+      // Применяем масштаб манекена, умноженный на ваш коэффициент pantsScale
+      pantsModel.scale.set(
+          mannequinScale * pantsScale, 
+          mannequinScale * pantsScale, 
+          mannequinScale * pantsScale
+      ); 
       
-      const box = new THREE.Box3().setFromObject(model);
-      model.position.x = -(box.max.x + box.min.x) / 2;
-      model.position.z = -(box.max.z + box.min.z) / 2;
+      // Опускаем/поднимаем штаны
+      pantsModel.position.set(0, pantsOffsetY, 0); 
       
-      // Поднимаем/опускаем
-      model.position.y = mannequinOffsetY;
-      
-      mannequinGroup.add(model);
-    }, undefined, (err) => console.error('Ошибка манекена:', err));
+      pantsModel.visible = false;
+      mannequinGroup.add(pantsModel);
+    }, undefined, (err) => console.error('Ошибка штанов:', err));
 
     // Загрузка штанов
     loader.load('models/pants.glb', (gltf) => {
