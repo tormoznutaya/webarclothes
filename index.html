@@ -1,39 +1,226 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebAR Каталог Одежды</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WebAR Каталог Одежды</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    #info {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; color: #fff; font-size: 14px;
+      background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px;
+      pointer-events: none; text-align: center;
+    }
+
+    #ar-button {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; padding: 14px 24px; border: none; border-radius: 24px;
+      background: #007bff; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,123,255,0.4);
+    }
+    #ar-button:disabled { background: #666; cursor: not-allowed; box-shadow: none; }
+
+    /* Панель управления (появляется только когда манекен поставлен) */
+    #ui-container {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 15px 30px; border-radius: 15px;
+      text-align: center; z-index: 1000;
+      display: none; /* Скрыта по умолчанию */
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    button#btn-pants {
+      background: #28a745; color: white; border: none;
+      padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-    <div id="canvas-container"></div>
+  <div id="info">Наведите камеру на пол и коснитесь экрана</div>
+  <button id="ar-button">Проверка поддержки AR...</button>
 
-    <!-- Интерфейс (кнопки) -->
-    <div id="ui-container">
-        <h1>Виртуальный манекен</h1>
-        <p>Потяните мышкой или пальцем, чтобы вращать</p>
-        
-        <div id="loading" style="color: #ffaa00;">Загрузка 3D-моделей...</div>
-        
-        <div id="controls" style="display: none;">
-            <button id="btn-pants">Надеть штаны</button>
-            <!-- Сюда потом добавим футболки, куртки и т.д. -->
-        </div>
-    </div>
+  <div id="ui-container">
+    <button id="btn-pants">Надеть штаны</button>
+  </div>
 
-    <!-- Подключаем Three.js и загрузчик GLB-моделей через импорт-карты (современный способ) -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const arButton = document.getElementById('ar-button');
+    const info = document.getElementById('info');
+    const uiContainer = document.getElementById('ui-container');
+
+    // Проверка поддержки AR
+    if (navigator.xr) {
+      navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+        if (supported) {
+          arButton.textContent = 'Начать AR';
+          arButton.disabled = false;
+        } else {
+          arButton.textContent = 'AR не поддерживается';
+          info.textContent = 'Устройство не поддерживает immersive-ar';
         }
-    </script>
-    
-    <!-- Подключаем наш основной скрипт -->
-    <script type="module" src="js/main.js"></script>
+      });
+    } else {
+      arButton.textContent = 'WebXR не поддерживается';
+      info.textContent = 'Откройте в Chrome на Android';
+    }
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    // Свет
+    const ambientLight = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1.5);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(1, 2, 1);
+    scene.add(dirLight);
+
+    // Прицел (кольцо на полу)
+    const ringGeometry = new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2);
+    const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Зеленый для заметности
+    const reticle = new THREE.Mesh(ringGeometry, ringMaterial);
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    scene.add(reticle);
+
+    // Модели
+    const loader = new GLTFLoader();
+    let mannequinGroup = new THREE.Group();
+    let pantsModel = null;
+    scene.add(mannequinGroup);
+
+    // Загрузка манекена
+    loader.load('models/mannequin.glb', (gltf) => {
+      const model = gltf.scene;
+      
+      // Центрируем манекен
+      const box = new THREE.Box3().setFromObject(model);
+      model.position.y -= box.min.y; 
+      model.position.x -= (box.max.x + box.min.x) / 2;
+      model.position.z -= (box.max.z + box.min.z) / 2;
+      
+      mannequinGroup.add(model);
+    }, undefined, (err) => console.error('Ошибка манекена:', err));
+
+    // Загрузка штанов
+    loader.load('models/pants.glb', (gltf) => {
+      pantsModel = gltf.scene;
+      
+      // Настройка положения штанов (подгоняем под ноги)
+      pantsModel.position.set(0, 0.55, 0); 
+      pantsModel.scale.set(1, 1, 1); 
+      
+      pantsModel.visible = false;
+      mannequinGroup.add(pantsModel);
+    }, undefined, (err) => console.error('Ошибка штанов:', err));
+
+    // Кнопка переключения штанов
+    document.getElementById('btn-pants').addEventListener('click', () => {
+      if (pantsModel) {
+        pantsModel.visible = !pantsModel.visible;
+      }
+    });
+
+    let hitTestSource = null;
+    let referenceSpace = null;
+
+    arButton.addEventListener('click', async () => {
+      if (!navigator.xr) return;
+
+      const session = await navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: document.body }
+      });
+
+      renderer.xr.setReferenceSpaceType('local');
+      await renderer.xr.setSession(session);
+
+      referenceSpace = await session.requestReferenceSpace('local');
+      const viewerSpace = await session.requestReferenceSpace('viewer');
+      hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+
+      arButton.style.display = 'none';
+      info.textContent = 'Тапните по полу, чтобы поставить манекен';
+
+      // Обработка тапа по экрану
+      session.addEventListener('select', () => {
+        if (reticle.visible) {
+          // Переносим группу с манекеном туда, где прицел
+          mannequinGroup.position.setFromMatrixPosition(reticle.matrix);
+          mannequinGroup.quaternion.setFromRotationMatrix(reticle.matrix);
+          
+          // Показываем панель с кнопкой
+          uiContainer.style.display = 'block';
+          info.textContent = 'Манекен установлен. Обойдите его вокруг.';
+        }
+      });
+
+      session.addEventListener('end', () => {
+        arButton.style.display = 'block';
+        uiContainer.style.display = 'none';
+        hitTestSource = null;
+        referenceSpace = null;
+        reticle.visible = false;
+        info.textContent = 'Наведите камеру на пол и коснитесь экрана';
+      });
+    });
+
+    renderer.setAnimationLoop((timestamp, frame) => {
+      if (!frame) return;
+
+      if (referenceSpace) {
+        const pose = frame.getViewerPose(referenceSpace);
+        if (pose) {
+          const view = pose.views[0];
+          camera.matrix.fromArray(view.transform.matrix);
+          camera.matrix.decompose(camera.position, camera.quaternion, camera.scale);
+        }
+      }
+
+      if (hitTestSource) {
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+        if (hitTestResults.length > 0) {
+          const hit = hitTestResults[0];
+          const pose = hit.getPose(referenceSpace);
+          reticle.visible = true;
+          reticle.matrix.fromArray(pose.transform.matrix);
+        } else {
+          reticle.visible = false;
+        }
+      }
+
+      renderer.render(scene, camera);
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+
 </body>
 </html>
