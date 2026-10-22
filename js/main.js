@@ -4,38 +4,75 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // 1. Создаем сцену
 const scene = new THREE.Scene();
-scene.background = null; // Прозрачный фон (чтобы видеть CSS-градиент)
 
-// 2. Создаем камеру
+// 2. Камера
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 1, 3); // Отодвигаем камеру назад
+camera.position.set(0, 1.5, 3); 
 
-// 3. Создаем рендерер (то, что рисует картинку)
+// 3. Рендерер (с альфа-каналом для прозрачности)
 const container = document.getElementById('canvas-container');
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 container.appendChild(renderer.domElement);
 
-// 4. Добавляем свет
-const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Мягкий общий свет
+// 4. Свет (сделаем его ярче)
+const ambientLight = new THREE.AmbientLight(0xffffff, 2); 
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 2); // Солнце
-directionalLight.position.set(5, 10, 5);
-scene.add(directionalLight);
+const dirLight1 = new THREE.DirectionalLight(0xffffff, 3);
+dirLight1.position.set(5, 10, 5);
+scene.add(dirLight1);
 
-// 5. Управление камерой (вращение мышкой)
+const dirLight2 = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight2.position.set(-5, 5, -5);
+scene.add(dirLight2);
+
+// 5. Управление камерой
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; // Плавность
+controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.minDistance = 1.5; // Не даем слишком близко приблизиться
-controls.maxDistance = 5;
-controls.maxPolarAngle = Math.PI / 2 + 0.1; // Запрещаем смотреть снизу
+controls.minDistance = 1;
+controls.maxDistance = 6;
+controls.target.set(0, 1, 0); // Смотрим на центр манекена
 
-// 6. Загрузка моделей
+// 6. Включаем камеру (AR-режим)
+async function setupCamera() {
+    try {
+        // Запрашиваем видео с камеры
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' } // Задняя камера на телефоне
+        });
+        
+        // Создаем HTML-элемент video для фона
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.setAttribute('playsinline', ''); // Важно для iOS
+        video.play();
+        
+        // Настраиваем CSS, чтобы видео было на весь экран под 3D
+        video.style.position = 'absolute';
+        video.style.top = '0';
+        video.style.left = '0';
+        video.style.width = '100vw';
+        video.style.height = '100vh';
+        video.style.objectFit = 'cover';
+        video.style.zIndex = '-1'; // Позади 3D-сцены
+        
+        document.body.prepend(video);
+        
+        // Убираем градиентный фон, чтобы видеть камеру
+        document.body.style.background = 'none';
+
+    } catch (err) {
+        console.warn("Камера недоступна или доступ запрещен. Оставляем градиентный фон.", err);
+    }
+}
+setupCamera();
+
+// 7. Загрузка моделей
 const loader = new GLTFLoader();
-let mannequinGroup = new THREE.Group(); // Группа для манекена и одежды
+let mannequinGroup = new THREE.Group(); 
 scene.add(mannequinGroup);
 
 let pantsModel = null;
@@ -46,24 +83,21 @@ const controlsDiv = document.getElementById('controls');
 loader.load('./models/mannequin.glb', function (gltf) {
     const model = gltf.scene;
     
-    // Центрируем модель (чтобы она была ровно по центру координат)
+    // Центрируем
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
-    model.position.x += (model.position.x - center.x);
-    model.position.y += (model.position.y - center.y);
-    model.position.z += (model.position.z - center.z);
+    model.position.x -= center.x;
+    model.position.y -= box.min.y; // Ставим ноги на пол (Y=0)
+    model.position.z -= center.z;
     
-    // Масштабируем, если модель слишком большая или маленькая
-    // (Возможно, вам придется подогнать это число, когда добавите свою модель)
-    // model.scale.set(1, 1, 1); 
+    // Вращаем манекен к нам лицом (если он стоит спиной)
+    // model.rotation.y = Math.PI; 
 
     mannequinGroup.add(model);
-    
-    // Проверяем загрузились ли штаны
     checkAllLoaded();
-}, undefined, function (error) {
-    console.error('Ошибка загрузки манекена:', error);
-    loadingText.innerText = "Ошибка загрузки манекена (проверьте консоль)";
+}, undefined, (error) => {
+    console.error('Ошибка манекена:', error);
+    loadingText.innerText = "Ошибка загрузки манекена";
     loadingText.style.color = "red";
 });
 
@@ -71,56 +105,42 @@ loader.load('./models/mannequin.glb', function (gltf) {
 loader.load('./models/pants.glb', function (gltf) {
     pantsModel = gltf.scene;
     
-    // ВАЖНО: Позиционирование штанов. 
-    // Изначально мы ставим их так же, как манекен. Вам придется подогнать положение (position) 
-    // под ваш конкретный манекен, когда увидите результат.
+    // ВАЖНО: Настройка положения штанов
+    // Так как я не вижу точных размеров, эти цифры - предположение.
+    // Вам нужно будет менять их, пока штаны не встанут на ноги.
+    pantsModel.position.set(0, 0.5, 0); // X, Y (высота), Z
+    pantsModel.scale.set(1, 1, 1);      // Масштаб
     
-    // Центрируем
-    const box = new THREE.Box3().setFromObject(pantsModel);
-    const center = box.getCenter(new THREE.Vector3());
-    pantsModel.position.x += (pantsModel.position.x - center.x);
-    pantsModel.position.y += (pantsModel.position.y - center.y);
-    pantsModel.position.z += (pantsModel.position.z - center.z);
-
-    // Временно скрываем штаны
     pantsModel.visible = false;
-    
     mannequinGroup.add(pantsModel);
     
     checkAllLoaded();
-}, undefined, function (error) {
-    console.error('Ошибка загрузки штанов:', error);
-    loadingText.innerText = "Ошибка загрузки штанов (проверьте консоль)";
-    loadingText.style.color = "red";
+}, undefined, (error) => {
+    console.error('Ошибка штанов:', error);
 });
 
-// Функция проверки загрузки всех моделей
 function checkAllLoaded() {
-    if (mannequinGroup.children.length >= 1) { // Если манекен загрузился
+    if (mannequinGroup.children.length >= 1) {
         loadingText.style.display = 'none';
         controlsDiv.style.display = 'block';
     }
 }
 
-// 7. Обработка кнопок
 document.getElementById('btn-pants').addEventListener('click', () => {
     if (pantsModel) {
-        pantsModel.visible = !pantsModel.visible; // Переключаем видимость
+        pantsModel.visible = !pantsModel.visible;
     }
 });
 
-// 8. Обработка изменения размера окна
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// 9. Цикл анимации (выполняется 60 раз в секунду)
 function animate() {
     requestAnimationFrame(animate);
-    controls.update(); // Обновляем управление (для плавности)
-    renderer.render(scene, camera); // Рисуем кадр
+    controls.update(); 
+    renderer.render(scene, camera);
 }
-
 animate();
