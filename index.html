@@ -108,21 +108,25 @@
     mannequinGroup.visible = false; 
     scene.add(mannequinGroup);
 
+    // === НАСТРОЙКИ, КОТОРЫЕ ВЫ МОЖЕТЕ МЕНЯТЬ ===
+    const mannequinScale = 0.2;       // Размер манекена
+    const mannequinOffsetY = -0.3;    // Смещение манекена по высоте (вниз - отрицательное)
+    const pantsOffsetY = -0.6;        // Смещение штанов по высоте относительно манекена
+    // ============================================
+
     // Загрузка манекена
     loader.load('models/mannequin.glb', (gltf) => {
       const model = gltf.scene;
       
-      // 1. Уменьшаем масштаб
-      const scaleFactor = 0.2;
-      model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+      model.scale.set(mannequinScale, mannequinScale, mannequinScale);
       
-      // 2. Центрируем по горизонтали (X и Z)
+      // Центрируем по горизонтали
       const box = new THREE.Box3().setFromObject(model);
       model.position.x = -(box.max.x + box.min.x) / 2;
       model.position.z = -(box.max.z + box.min.z) / 2;
       
-      // 3. Поднимаем манекен, чтобы его ноги (box.min.y) стояли на полу (Y=0)
-      model.position.y = -box.min.y;
+      // Опускаем вниз с помощью ручного смещения
+      model.position.y = mannequinOffsetY;
       
       mannequinGroup.add(model);
     }, undefined, (err) => console.error('Ошибка манекена:', err));
@@ -131,13 +135,10 @@
     loader.load('models/pants.glb', (gltf) => {
       pantsModel = gltf.scene;
       
-      const scaleFactor = 0.2;
-      pantsModel.scale.set(scaleFactor, scaleFactor, scaleFactor); 
+      pantsModel.scale.set(mannequinScale, mannequinScale, mannequinScale); 
       
-      // Настройка положения штанов относительно пивота манекена (0,0,0)
-      // Если штаны на голове - делаем Y отрицательным (опускаем вниз).
-      // Если штаны на поясе, но не на ногах - опускаем еще ниже (например, -0.1)
-      pantsModel.position.set(0, -0.15, 0); 
+      // Опускаем штаны еще ниже
+      pantsModel.position.set(0, pantsOffsetY, 0); 
       
       pantsModel.visible = false;
       mannequinGroup.add(pantsModel);
