@@ -108,11 +108,13 @@
     mannequinGroup.visible = false; 
     scene.add(mannequinGroup);
 
-    // === НАСТРОЙКИ, КОТОРЫЕ ВЫ МОЖЕТЕ МЕНЯТЬ ===
-    const mannequinScale = 0.2;       // Размер манекена
-    const mannequinOffsetY = -0.3;    // Смещение манекена по высоте (вниз - отрицательное)
-    const pantsOffsetY = -0.6;        // Смещение штанов по высоте относительно манекена
-    // ============================================
+    // ==========================================
+    // НАСТРОЙКИ ДЛЯ ПОДГОНКИ (МЕНЯЙТЕ ЦИФРЫ ЗДЕСЬ)
+    // ==========================================
+    const mannequinScale = 0.2;       
+    const mannequinOffsetY = 0.0;     // Поднимаем манекен вверх (0 - это центр, если надо выше - ставьте 0.1 или 0.2)
+    const pantsOffsetY = -1.0;        // Опускаем штаны еще ниже относительно манекена
+    // ==========================================
 
     // Загрузка манекена
     loader.load('models/mannequin.glb', (gltf) => {
@@ -120,12 +122,11 @@
       
       model.scale.set(mannequinScale, mannequinScale, mannequinScale);
       
-      // Центрируем по горизонтали
       const box = new THREE.Box3().setFromObject(model);
       model.position.x = -(box.max.x + box.min.x) / 2;
       model.position.z = -(box.max.z + box.min.z) / 2;
       
-      // Опускаем вниз с помощью ручного смещения
+      // Поднимаем/опускаем
       model.position.y = mannequinOffsetY;
       
       mannequinGroup.add(model);
@@ -137,7 +138,7 @@
       
       pantsModel.scale.set(mannequinScale, mannequinScale, mannequinScale); 
       
-      // Опускаем штаны еще ниже
+      // Опускаем штаны
       pantsModel.position.set(0, pantsOffsetY, 0); 
       
       pantsModel.visible = false;
