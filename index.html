@@ -99,16 +99,19 @@
 
     // Прицел (кольцо на полу)
     const ringGeometry = new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2);
-    const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Зеленый для заметности
+    const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Зеленый
     const reticle = new THREE.Mesh(ringGeometry, ringMaterial);
     reticle.matrixAutoUpdate = false;
     reticle.visible = false;
     scene.add(reticle);
 
-    // Модели
+    // Группа для манекена и одежды
     const loader = new GLTFLoader();
     let mannequinGroup = new THREE.Group();
     let pantsModel = null;
+    
+    // ИЗНАЧАЛЬНО СКРЫВАЕМ МАНЕКЕН, ПОКА НЕ ТАПНУТ ПО ЭКРАНУ
+    mannequinGroup.visible = false; 
     scene.add(mannequinGroup);
 
     // Загрузка манекена
@@ -121,6 +124,9 @@
       model.position.x -= (box.max.x + box.min.x) / 2;
       model.position.z -= (box.max.z + box.min.z) / 2;
       
+      // УМЕНЬШАЕМ МАСШТАБ (если всё равно большой - поставьте 0.1, если маленький - 0.5)
+      model.scale.set(0.2, 0.2, 0.2); 
+      
       mannequinGroup.add(model);
     }, undefined, (err) => console.error('Ошибка манекена:', err));
 
@@ -128,9 +134,11 @@
     loader.load('models/pants.glb', (gltf) => {
       pantsModel = gltf.scene;
       
-      // Настройка положения штанов (подгоняем под ноги)
-      pantsModel.position.set(0, 0.55, 0); 
-      pantsModel.scale.set(1, 1, 1); 
+      // Уменьшаем штаны точно так же, как манекен
+      pantsModel.scale.set(0.2, 0.2, 0.2); 
+      
+      // Подгоняем высоту штанов по ногам
+      pantsModel.position.set(0, 0.11, 0); 
       
       pantsModel.visible = false;
       mannequinGroup.add(pantsModel);
@@ -172,6 +180,9 @@
           mannequinGroup.position.setFromMatrixPosition(reticle.matrix);
           mannequinGroup.quaternion.setFromRotationMatrix(reticle.matrix);
           
+          // Показываем манекен
+          mannequinGroup.visible = true; 
+          
           // Показываем панель с кнопкой
           uiContainer.style.display = 'block';
           info.textContent = 'Манекен установлен. Обойдите его вокруг.';
@@ -181,6 +192,8 @@
       session.addEventListener('end', () => {
         arButton.style.display = 'block';
         uiContainer.style.display = 'none';
+        mannequinGroup.visible = false; // Снова прячем при выходе
+        
         hitTestSource = null;
         referenceSpace = null;
         reticle.visible = false;
