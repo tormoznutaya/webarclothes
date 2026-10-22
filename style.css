@@ -1,1 +1,64 @@
+body {
+    margin: 0;
+    overflow: hidden; /* Убираем полосы прокрутки */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
 
+/* Контейнер для 3D-сцены на весь экран */
+#canvas-container {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* Панель управления поверх 3D */
+#ui-container {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    padding: 20px 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    text-align: center;
+    z-index: 10;
+    min-width: 300px;
+}
+
+h1 {
+    margin: 0 0 5px 0;
+    font-size: 24px;
+    color: #333;
+}
+
+p {
+    margin: 0 0 15px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.1s ease;
+    font-weight: 600;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+button:active {
+    transform: scale(0.95);
+}
