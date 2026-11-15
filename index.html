@@ -39,7 +39,23 @@
   </style>
 </head>
 <body>
+<!-- Экран каталога (показывается изначально) -->
+<div id="catalog-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 9999; display: flex; flex-direction: column; align-items: center; padding-top: 50px;">
+  <h1>Каталог одежды</h1>
+  <p>Выберите вещи для примерки</p>
+  
+  <div style="display: flex; gap: 20px;">
+    <!-- Карточка товара -->
+    <div class="item-card" style="border: 2px solid #ddd; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer;">
+      <h3>Штаны</h3>
+      <button onclick="selectItem('pants')">Выбрать</button>
+    </div>
+  </div>
 
+  <button id="go-to-ar-btn" style="margin-top: 50px; padding: 15px 30px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 10px;">
+    Открыть 3D / AR примерку
+  </button>
+</div>
   <div id="info">Наведите камеру на пол и коснитесь экрана</div>
   <button id="ar-button">Проверка поддержки AR...</button>
 
@@ -112,8 +128,12 @@
     // НАСТРОЙКИ ДЛЯ ПОДГОНКИ (МЕНЯЙТЕ ЦИФРЫ ЗДЕСЬ)
     // ==========================================
     const mannequinScale = 0.2;       
-    const mannequinOffsetY = 0.8;     // Поднимаем манекен вверх (0 - это центр, если надо выше - ставьте 0.1 или 0.2)
-    const pantsOffsetY = 0.3;        // Опускаем штаны еще ниже относительно манекена
+    const mannequinOffsetY = 0.8;     
+
+    // ИЗМЕНЯЕМ ЗДЕСЬ:
+    const pantsScale = 0.22;          // Сделаем штаны чуть больше, если они до колена (подберите значение)
+    const pantsOffsetY = 0.15;        // Опускаем штаны ниже (если они выше талии) или поднимаем (если ниже). 
+    const pantsOffsetZ = 0;           // Сдвиг вперед/назад (если штаны топорщатся)
     // ==========================================
 
     // Загрузка манекена
@@ -132,11 +152,19 @@
       mannequinGroup.add(model);
     }, undefined, (err) => console.error('Ошибка манекена:', err));
 
-    // Загрузка штанов
+        // Загрузка штанов
     loader.load('models/pants.glb', (gltf) => {
       pantsModel = gltf.scene;
       
-      pantsModel.scale.set(mannequinScale, mannequinScale, mannequinScale); 
+      // Применяем новые настройки масштаба
+      pantsModel.scale.set(pantsScale, pantsScale, pantsScale); 
+      
+      // Применяем новые настройки позиции
+      pantsModel.position.set(0, pantsOffsetY, pantsOffsetZ); 
+      
+      pantsModel.visible = false;
+      mannequinGroup.add(pantsModel);
+    }, undefined, (err) => console.error('Ошибка штанов:', err)); 
       
       // Опускаем штаны
       pantsModel.position.set(0, pantsOffsetY, 0); 
@@ -227,6 +255,22 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+        // --- ЛОГИКА КАТАЛОГА ---
+    window.selectItem = (itemName) => {
+      if (itemName === 'pants') {
+        // Показываем штаны на манекене
+        if (pantsModel) pantsModel.visible = true;
+        alert('Штаны выбраны!');
+      }
+    };
+
+    document.getElementById('go-to-ar-btn').addEventListener('click', () => {
+      // Прячем каталог
+      document.getElementById('catalog-screen').style.display = 'none';
+      
+      // Показываем сцену
+      // (Здесь мы ничего не делаем, просто каталог перестает перекрывать 3D)
     });
   </script>
 
