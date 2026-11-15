@@ -7,60 +7,84 @@
   <style>
     body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     
+    /* ЭКРАН КАТАЛОГА */
+    #catalog-screen {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      z-index: 9999; display: flex; flex-direction: column; align-items: center; padding-top: 50px;
+      overflow-y: auto;
+    }
+    #catalog-screen h1 { color: #333; margin-bottom: 10px; }
+    #catalog-screen p { color: #666; margin-bottom: 30px; }
+    .catalog-items { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; padding: 0 20px; }
+    .item-card {
+      background: #fff; border-radius: 15px; padding: 20px; width: 200px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .item-card img { width: 100px; height: 100px; background: #eee; border-radius: 10px; margin-bottom: 15px; object-fit: cover; }
+    .item-card button {
+      background: #007bff; color: #fff; border: none; padding: 10px 20px;
+      border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;
+      transition: background 0.3s;
+    }
+    .item-card button.selected { background: #28a745; }
+    
+    #go-to-scene-btn {
+      margin-top: 40px; padding: 15px 40px; font-size: 18px; font-weight: bold;
+      background: #007bff; color: white; border: none; border-radius: 30px;
+      cursor: pointer; box-shadow: 0 5px 15px rgba(0,123,255,0.4); transition: transform 0.2s;
+    }
+    #go-to-scene-btn:active { transform: scale(0.95); }
+
+    /* ОСТАЛЬНОЙ ИНТЕРФЕЙС */
     #info {
       position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
       z-index: 1000; color: #fff; font-size: 14px;
       background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px;
-      pointer-events: none; text-align: center;
+      pointer-events: none; text-align: center; display: none;
     }
-
     #ar-button {
       position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
       z-index: 1000; padding: 14px 24px; border: none; border-radius: 24px;
       background: #007bff; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer;
-      box-shadow: 0 4px 15px rgba(0,123,255,0.4);
+      box-shadow: 0 4px 15px rgba(0,123,255,0.4); display: none;
     }
     #ar-button:disabled { background: #666; cursor: not-allowed; box-shadow: none; }
-
     #ui-container {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.9);
-      padding: 15px 30px; border-radius: 15px;
-      text-align: center; z-index: 1000;
-      display: none;
+      background: rgba(255, 255, 255, 0.9); padding: 15px 30px; border-radius: 15px;
+      text-align: center; z-index: 1000; display: none;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
-
-    button#btn-pants {
-      background: #28a745; color: white; border: none;
-      padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: bold;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
-<!-- Экран каталога (показывается изначально) -->
-<div id="catalog-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 9999; display: flex; flex-direction: column; align-items: center; padding-top: 50px;">
-  <h1>Каталог одежды</h1>
-  <p>Выберите вещи для примерки</p>
-  
-  <div style="display: flex; gap: 20px;">
-    <!-- Карточка товара -->
-    <div class="item-card" style="border: 2px solid #ddd; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer;">
-      <h3>Штаны</h3>
-      <button onclick="selectItem('pants')">Выбрать</button>
+
+  <!-- ЭКРАН 1: КАТАЛОГ -->
+  <div id="catalog-screen">
+    <h1>WebAR Каталог</h1>
+    <p>Выберите одежду для виртуальной примерки</p>
+    
+    <div class="catalog-items">
+      <div class="item-card">
+        <div style="width:100px; height:100px; background:#e9ecef; border-radius:10px; margin-bottom:15px; display:flex; align-items:center; justify-content:center;">👖</div>
+        <h3>Штаны</h3>
+        <button id="btn-select-pants">Выбрать</button>
+      </div>
+      <!-- Сюда можно добавить другие вещи (футболки, куртки) по аналогии -->
     </div>
+
+    <button id="go-to-scene-btn">Перейти к примерке</button>
   </div>
 
-  <button id="go-to-ar-btn" style="margin-top: 50px; padding: 15px 30px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 10px;">
-    Открыть 3D / AR примерку
-  </button>
-</div>
+  <!-- ЭКРАН 2: 3D СЦЕНА И AR -->
   <div id="info">Наведите камеру на пол и коснитесь экрана</div>
   <button id="ar-button">Проверка поддержки AR...</button>
 
   <div id="ui-container">
-    <button id="btn-pants">Надеть штаны</button>
+    <!-- Кнопку "Надеть штаны" можно убрать, так как выбор идет в каталоге -->
+    <p style="margin:0; color:#333; font-weight:bold;">Примерка активна</p>
   </div>
 
   <script type="importmap">
@@ -76,14 +100,42 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+    // === ЭЛЕМЕНТЫ ИНТЕРФЕЙСА ===
+    const catalogScreen = document.getElementById('catalog-screen');
+    const goToSceneBtn = document.getElementById('go-to-scene-btn');
+    const btnSelectPants = document.getElementById('btn-select-pants');
     const arButton = document.getElementById('ar-button');
     const info = document.getElementById('info');
     const uiContainer = document.getElementById('ui-container');
 
+    let isPantsSelected = false;
+
+    // === ЛОГИКА КАТАЛОГА ===
+    btnSelectPants.addEventListener('click', () => {
+      isPantsSelected = !isPantsSelected;
+      if (isPantsSelected) {
+        btnSelectPants.textContent = 'Выбрано ✔';
+        btnSelectPants.classList.add('selected');
+        if (pantsModel) pantsModel.visible = true;
+      } else {
+        btnSelectPants.textContent = 'Выбрать';
+        btnSelectPants.classList.remove('selected');
+        if (pantsModel) pantsModel.visible = false;
+      }
+    });
+
+    goToSceneBtn.addEventListener('click', () => {
+      catalogScreen.style.display = 'none'; // Прячем каталог
+      info.style.display = 'block';         // Показываем подсказки
+      arButton.style.display = 'block';     // Показываем кнопку AR
+      uiContainer.style.display = 'block';  // Показываем панель снизу
+    });
+
+    // === ПРОВЕРКА AR ===
     if (navigator.xr) {
       navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
         if (supported) {
-          arButton.textContent = 'Начать AR';
+          arButton.textContent = 'Начать AR примерку';
           arButton.disabled = false;
         } else {
           arButton.textContent = 'AR не поддерживается';
@@ -95,6 +147,7 @@
       info.textContent = 'Откройте в Chrome на Android';
     }
 
+    // === THREE.JS СЦЕНА ===
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
 
@@ -110,6 +163,7 @@
     dirLight.position.set(1, 2, 1);
     scene.add(dirLight);
 
+    // Мишень (зеленое кольцо)
     const ringGeometry = new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2);
     const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const reticle = new THREE.Mesh(ringGeometry, ringMaterial);
@@ -117,68 +171,40 @@
     reticle.visible = false;
     scene.add(reticle);
 
+    // === ЗАГРУЗКА МОДЕЛЕЙ ===
     const loader = new GLTFLoader();
     let mannequinGroup = new THREE.Group();
     let pantsModel = null;
     
-    mannequinGroup.visible = false; 
+    mannequinGroup.visible = true; // На ПК показываем сразу (до AR)
     scene.add(mannequinGroup);
 
-    // ==========================================
-    // НАСТРОЙКИ ДЛЯ ПОДГОНКИ (МЕНЯЙТЕ ЦИФРЫ ЗДЕСЬ)
-    // ==========================================
+    // Настройки подгонки
     const mannequinScale = 0.2;       
     const mannequinOffsetY = 0.8;     
+    const pantsScale = 0.22;          // Подберите масштаб
+    const pantsOffsetY = 0.15;        // Подберите высоту
+    const pantsOffsetZ = 0;           
 
-    // ИЗМЕНЯЕМ ЗДЕСЬ:
-    const pantsScale = 0.22;          // Сделаем штаны чуть больше, если они до колена (подберите значение)
-    const pantsOffsetY = 0.15;        // Опускаем штаны ниже (если они выше талии) или поднимаем (если ниже). 
-    const pantsOffsetZ = 0;           // Сдвиг вперед/назад (если штаны топорщатся)
-    // ==========================================
-
-    // Загрузка манекена
     loader.load('models/mannequin.glb', (gltf) => {
       const model = gltf.scene;
-      
       model.scale.set(mannequinScale, mannequinScale, mannequinScale);
-      
       const box = new THREE.Box3().setFromObject(model);
       model.position.x = -(box.max.x + box.min.x) / 2;
       model.position.z = -(box.max.z + box.min.z) / 2;
-      
-      // Поднимаем/опускаем
       model.position.y = mannequinOffsetY;
-      
       mannequinGroup.add(model);
     }, undefined, (err) => console.error('Ошибка манекена:', err));
 
-        // Загрузка штанов
     loader.load('models/pants.glb', (gltf) => {
       pantsModel = gltf.scene;
-      
-      // Применяем новые настройки масштаба
       pantsModel.scale.set(pantsScale, pantsScale, pantsScale); 
-      
-      // Применяем новые настройки позиции
       pantsModel.position.set(0, pantsOffsetY, pantsOffsetZ); 
-      
-      pantsModel.visible = false;
-      mannequinGroup.add(pantsModel);
-    }, undefined, (err) => console.error('Ошибка штанов:', err)); 
-      
-      // Опускаем штаны
-      pantsModel.position.set(0, pantsOffsetY, 0); 
-      
-      pantsModel.visible = false;
+      pantsModel.visible = false; // Изначально скрыты, пока не выберут в каталоге
       mannequinGroup.add(pantsModel);
     }, undefined, (err) => console.error('Ошибка штанов:', err));
 
-    document.getElementById('btn-pants').addEventListener('click', () => {
-      if (pantsModel) {
-        pantsModel.visible = !pantsModel.visible;
-      }
-    });
-
+    // === ЛОГИКА AR ===
     let hitTestSource = null;
     let referenceSpace = null;
 
@@ -207,15 +233,13 @@
           mannequinGroup.quaternion.setFromRotationMatrix(reticle.matrix);
           mannequinGroup.visible = true; 
           
-          uiContainer.style.display = 'block';
           info.textContent = 'Манекен установлен. Обойдите его вокруг.';
         }
       });
 
       session.addEventListener('end', () => {
         arButton.style.display = 'block';
-        uiContainer.style.display = 'none';
-        mannequinGroup.visible = false; 
+        mannequinGroup.visible = true; 
         
         hitTestSource = null;
         referenceSpace = null;
@@ -224,27 +248,29 @@
       });
     });
 
+    // === ЦИКЛ ОТРИСОВКИ ===
     renderer.setAnimationLoop((timestamp, frame) => {
-      if (!frame) return;
-
-      if (referenceSpace) {
-        const pose = frame.getViewerPose(referenceSpace);
-        if (pose) {
-          const view = pose.views[0];
-          camera.matrix.fromArray(view.transform.matrix);
-          camera.matrix.decompose(camera.position, camera.quaternion, camera.scale);
+      // На ПК frame будет null, в AR - объектом
+      if (frame) {
+        if (referenceSpace) {
+          const pose = frame.getViewerPose(referenceSpace);
+          if (pose) {
+            const view = pose.views[0];
+            camera.matrix.fromArray(view.transform.matrix);
+            camera.matrix.decompose(camera.position, camera.quaternion, camera.scale);
+          }
         }
-      }
 
-      if (hitTestSource) {
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults.length > 0) {
-          const hit = hitTestResults[0];
-          const pose = hit.getPose(referenceSpace);
-          reticle.visible = true;
-          reticle.matrix.fromArray(pose.transform.matrix);
-        } else {
-          reticle.visible = false;
+        if (hitTestSource) {
+          const hitTestResults = frame.getHitTestResults(hitTestSource);
+          if (hitTestResults.length > 0) {
+            const hit = hitTestResults[0];
+            const pose = hit.getPose(referenceSpace);
+            reticle.visible = true;
+            reticle.matrix.fromArray(pose.transform.matrix);
+          } else {
+            reticle.visible = false;
+          }
         }
       }
 
@@ -255,22 +281,6 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-        // --- ЛОГИКА КАТАЛОГА ---
-    window.selectItem = (itemName) => {
-      if (itemName === 'pants') {
-        // Показываем штаны на манекене
-        if (pantsModel) pantsModel.visible = true;
-        alert('Штаны выбраны!');
-      }
-    };
-
-    document.getElementById('go-to-ar-btn').addEventListener('click', () => {
-      // Прячем каталог
-      document.getElementById('catalog-screen').style.display = 'none';
-      
-      // Показываем сцену
-      // (Здесь мы ничего не делаем, просто каталог перестает перекрывать 3D)
     });
   </script>
 
