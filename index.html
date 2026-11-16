@@ -182,19 +182,29 @@
     // Настройки подгонки
     const mannequinScale = 0.2;       
     const mannequinOffsetY = 0.8;     
-    const pantsScale = 0.27;          // Подберите масштаб
+    const pantsScale = 0.23;          // Подберите масштаб
     const pantsOffsetY = 0.15;        // Подберите высоту
     const pantsOffsetZ = 0;           
 
-    loader.load('models/mannequin.glb', (gltf) => {
-      const model = gltf.scene;
-      model.scale.set(mannequinScale, mannequinScale, mannequinScale);
-      const box = new THREE.Box3().setFromObject(model);
-      model.position.x = -(box.max.x + box.min.x) / 2;
-      model.position.z = -(box.max.z + box.min.z) / 2;
-      model.position.y = mannequinOffsetY;
-      mannequinGroup.add(model);
-    }, undefined, (err) => console.error('Ошибка манекена:', err));
+       // Загрузка штанов
+    loader.load('models/pants.glb', (gltf) => {
+      pantsModel = gltf.scene;
+      
+      // Базовый масштаб (ширина и глубина)
+      const baseScale = 0.185; 
+      
+      // Масштаб по высоте (если 1.5 — штаны станут в 1.5 раза длиннее)
+      const stretchY = 1.5;    
+
+      // Применяем масштаб: X и Z — одинаковые, Y — вытянутый
+      pantsModel.scale.set(baseScale, baseScale * stretchY, baseScale); 
+      
+      // Позиция (подберите Y, чтобы пояс штанов попал на талию манекена)
+      pantsModel.position.set(0, 0.35, 0.02); 
+      
+      pantsModel.visible = false;
+      mannequinGroup.add(pantsModel);
+    }, undefined, (err) => console.error('Ошибка штанов:', err));
 
     loader.load('models/pants.glb', (gltf) => {
       pantsModel = gltf.scene;
